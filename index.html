@@ -22,32 +22,31 @@
       display: flex; flex-direction: column;
       align-items: center; justify-content: center; gap: 16px;
     }
-    #gate h2 {
-      font-family: 'DM Serif Display', serif;
-      font-size: 2rem; color: #fff; letter-spacing: -0.3px;
-    }
+    #gate h2 { font-family: 'DM Serif Display', serif; font-size: 2rem; color: #fff; letter-spacing: -0.3px; }
     #gate-sub { font-size: 13px; color: #9e9890; letter-spacing: 1px; }
     #gate-input {
-      background: #3a3835; border: 1.5px solid #555;
-      color: #fff; font-family: 'DM Sans', sans-serif;
-      font-size: 1rem; letter-spacing: 3px;
-      padding: 12px 20px; border-radius: 10px;
-      text-align: center; width: 220px; outline: none;
-      transition: border-color 0.2s;
+      background: #3a3835; border: 1.5px solid #555; color: #fff;
+      font-family: 'DM Sans', sans-serif; font-size: 1rem; letter-spacing: 3px;
+      padding: 12px 20px; border-radius: 10px; text-align: center;
+      width: 220px; outline: none; transition: border-color 0.2s;
     }
     #gate-input:focus { border-color: #c8a96e; }
     #gate-input.shake { animation: shake 0.3s ease; border-color: #e57373; }
     @keyframes shake {
       0%,100% { transform: translateX(0); }
-      25% { transform: translateX(-8px); }
-      75% { transform: translateX(8px); }
+      25%      { transform: translateX(-8px); }
+      75%      { transform: translateX(8px); }
     }
+    .gate-remember {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 12px; color: #9e9890; cursor: pointer;
+    }
+    .gate-remember input { accent-color: #c8a96e; width: 14px; height: 14px; cursor: pointer; }
     #gate-btn {
       background: #c8a96e; color: #2c2a27; border: none;
-      font-family: 'DM Sans', sans-serif; font-size: 13px;
-      font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
-      padding: 12px 32px; border-radius: 10px; cursor: pointer;
-      transition: opacity 0.2s;
+      font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 700;
+      letter-spacing: 1.5px; text-transform: uppercase;
+      padding: 12px 32px; border-radius: 10px; cursor: pointer; transition: opacity 0.2s;
     }
     #gate-btn:hover { opacity: 0.85; }
     #gate-error { font-size: 12px; color: #e57373; height: 16px; letter-spacing: 1px; }
@@ -56,80 +55,47 @@
     #app { display: none; }
     #app.visible { display: block; }
 
-    .header {
-      background: #2c2a27; padding: 28px 24px 24px; color: #fff;
-    }
-    .header-title {
-      font-family: 'DM Serif Display', serif;
-      font-size: 26px; letter-spacing: -0.3px; margin-bottom: 2px;
-    }
+    .header { background: #2c2a27; padding: 28px 24px 24px; color: #fff; }
+    .header-title { font-family: 'DM Serif Display', serif; font-size: 26px; letter-spacing: -0.3px; margin-bottom: 2px; }
     .header-date { font-size: 13px; color: #9e9890; margin-bottom: 20px; }
-    .progress-label {
-      font-size: 12px; color: #9e9890; margin-bottom: 6px;
-      font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase;
-    }
-    .progress-bar {
-      height: 6px; background: #454340; border-radius: 3px; overflow: hidden;
-    }
-    .progress-fill {
-      height: 100%; border-radius: 3px; transition: width 0.4s ease;
-    }
+    .progress-label { font-size: 12px; color: #9e9890; margin-bottom: 6px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
+    .progress-bar { height: 6px; background: #454340; border-radius: 3px; overflow: hidden; }
+    .progress-fill { height: 100%; border-radius: 3px; transition: width 0.4s ease; }
 
-    .tab-wrap {
-      display: flex; margin: 20px 20px 0;
-      background: #e8e4df; border-radius: 12px; padding: 4px;
-    }
-    .tab-btn {
-      flex: 1; padding: 10px; border: none; border-radius: 9px;
-      font-family: 'DM Sans', sans-serif; font-size: 14px; cursor: pointer;
-      transition: all 0.2s;
-    }
-    .tab-btn.active {
-      background: #fff; color: #2c2a27; font-weight: 600;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-    }
+    .tab-wrap { display: flex; margin: 20px 20px 0; background: #e8e4df; border-radius: 12px; padding: 4px; }
+    .tab-btn { flex: 1; padding: 10px; border: none; border-radius: 9px; font-family: 'DM Sans', sans-serif; font-size: 14px; cursor: pointer; transition: all 0.2s; }
+    .tab-btn.active { background: #fff; color: #2c2a27; font-weight: 600; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
     .tab-btn:not(.active) { background: transparent; color: #9e9890; font-weight: 400; }
 
     .exercises { padding: 20px 20px 0; }
-
     .ex-btn {
       display: flex; align-items: center; gap: 14px; width: 100%;
       border-radius: 14px; padding: 16px 18px; cursor: pointer;
-      border: 1.5px solid #e0ddd8; background: #fff;
-      text-align: left; margin-bottom: 10px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-      transition: all 0.2s ease;
+      border: 1.5px solid #e0ddd8; background: #fff; text-align: left;
+      margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); transition: all 0.2s ease;
     }
-    .ex-btn.done {
-      background: #e8f5e9; border-color: #81c784; box-shadow: none;
-    }
+    .ex-btn.done { background: #e8f5e9; border-color: #81c784; box-shadow: none; }
     .ex-circle {
       width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
       border: 2px solid #c5bfb8; background: transparent;
-      display: flex; align-items: center; justify-content: center;
-      transition: all 0.2s ease;
+      display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;
     }
-    .ex-btn.done .ex-circle {
-      background: #4caf50; border: none;
-    }
-    .ex-name {
-      font-size: 15px; font-weight: 600; color: #2c2a27;
-      line-height: 1.3;
-    }
+    .ex-btn.done .ex-circle { background: #4caf50; border: none; }
+    .ex-name { font-size: 15px; font-weight: 600; color: #2c2a27; line-height: 1.3; }
     .ex-btn.done .ex-name { color: #558b5a; text-decoration: line-through; }
     .ex-detail { font-size: 13px; color: #9e9890; margin-top: 2px; }
     .ex-btn.done .ex-detail { color: #81c784; }
 
     .complete-msg {
-      margin: 16px 20px 0; background: #e8f5e9;
-      border: 1.5px solid #81c784; border-radius: 14px;
-      padding: 16px; text-align: center;
+      margin: 16px 20px 0; background: #e8f5e9; border: 1.5px solid #81c784;
+      border-radius: 14px; padding: 16px; text-align: center;
       color: #388e3c; font-weight: 600; font-size: 15px;
     }
+    .day-counter { margin: 20px 20px 0; text-align: center; color: #9e9890; font-size: 13px; padding-bottom: 40px; }
 
-    .day-counter {
-      margin: 20px 20px 0; text-align: center;
-      color: #9e9890; font-size: 13px; padding-bottom: 40px;
+    .sync-status {
+      text-align: center; font-size: 11px; color: #9e9890;
+      letter-spacing: 0.5px; padding: 8px 20px 0;
     }
   </style>
 </head>
@@ -142,12 +108,14 @@
   <input id="gate-input" type="password" placeholder="Password" autocomplete="off"
     onkeydown="if(event.key==='Enter') checkGate()" />
   <div id="gate-error"></div>
+  <label class="gate-remember">
+    <input type="checkbox" id="gate-remember" /> Remember me
+  </label>
   <button id="gate-btn" onclick="checkGate()">Enter</button>
 </div>
 
 <!-- APP -->
 <div id="app">
-
   <div class="header">
     <div class="header-title">ACL Recovery</div>
     <div class="header-date" id="hdr-date"></div>
@@ -165,37 +133,81 @@
   <div class="exercises" id="exercise-list"></div>
   <div id="complete-msg" class="complete-msg" style="display:none;"></div>
   <div class="day-counter" id="day-counter"></div>
-
+  <div class="sync-status" id="sync-status"></div>
 </div>
 
-<script>
+<script type="module">
+import { initializeApp }             from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+import { getDatabase, ref, set, get, onValue } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js';
+
+const FB_CONFIG = {
+  apiKey:      "AIzaSyARK54MtzxGbPd78iHqfwrIDXodfdrTa90",
+  databaseURL: "https://baja-trip-a8117-default-rtdb.firebaseio.com",
+};
+const fbApp = initializeApp(FB_CONFIG);
+const db    = getDatabase(fbApp);
+
 const EXERCISES = {
   morning: [
-    { id: "m1", name: "Calf Raises",            detail: "2 × 20" },
-    { id: "m2", name: "Hip Flexor",              detail: "2 × 20" },
-    { id: "m3", name: "Hip Abduction",           detail: "2 × 20" },
-    { id: "m4", name: "Heel Slides",             detail: "2 × 15" },
-    { id: "m5", name: "Heel Slide with Strap",   detail: "2 × 10 · supine" },
-    { id: "m6", name: "Prone Quads",             detail: "× 30 · 3 sec hold each" },
+    { id: "m1", name: "Calf Raises",             detail: "2 × 20" },
+    { id: "m2", name: "Hip Flexor",               detail: "2 × 20" },
+    { id: "m3", name: "Hip Abduction",            detail: "2 × 20" },
+    { id: "m4", name: "Heel Slides",              detail: "2 × 15" },
+    { id: "m5", name: "Heel Slide with Strap",    detail: "2 × 10 · supine" },
+    { id: "m6", name: "Prone Quads",              detail: "× 30 · 3 sec hold each" },
   ],
   evening: [
-    { id: "e1", name: "Heel Slide with Strap",   detail: "2 × 10 · supine" },
-    { id: "e2", name: "Quad Set",                detail: "2 × 10 · 10 sec hold each" },
-    { id: "e3", name: "Active SLR with Quad Set",detail: "3 × 10" },
+    { id: "e1", name: "Heel Slide with Strap",    detail: "2 × 10 · supine" },
+    { id: "e2", name: "Quad Set",                 detail: "2 × 10 · 10 sec hold each" },
+    { id: "e3", name: "Active SLR with Quad Set", detail: "3 × 10" },
   ],
 };
 
 const SURGERY_DATE = new Date("2026-03-19");
 const PASSWORD     = "Bravo";
+let currentTab     = "morning";
+let fbChecked      = { morning: {}, evening: {} };
 
-let currentTab = "morning";
+// ── HELPERS ──
+function todayKey() { return new Date().toISOString().slice(0, 10); }
+function fbPath(session) { return `pt-tracker/ashley/${todayKey()}/${session}`; }
+function setSyncStatus(msg) { document.getElementById('sync-status').textContent = msg; }
+
+// ── FIREBASE SYNC ──
+async function fbLoad(session) {
+  try {
+    const snap = await get(ref(db, fbPath(session)));
+    return snap.exists() ? snap.val() : {};
+  } catch { return {}; }
+}
+
+async function fbSave(session, checked) {
+  try {
+    await set(ref(db, fbPath(session)), checked);
+    setSyncStatus('✓ Synced');
+    setTimeout(() => setSyncStatus(''), 2000);
+  } catch {
+    setSyncStatus('⚠ Offline — saved locally');
+  }
+}
+
+// ── LOCAL FALLBACK ──
+function localLoad(session) {
+  try { return JSON.parse(localStorage.getItem(`pt_${session}_${todayKey()}`) || '{}'); }
+  catch { return {}; }
+}
+function localSave(session, checked) {
+  localStorage.setItem(`pt_${session}_${todayKey()}`, JSON.stringify(checked));
+}
 
 // ── AUTH ──
-function checkGate() {
-  const input = document.getElementById('gate-input');
-  const err   = document.getElementById('gate-error');
+window.checkGate = function() {
+  const input    = document.getElementById('gate-input');
+  const err      = document.getElementById('gate-error');
+  const remember = document.getElementById('gate-remember').checked;
   if (input.value === PASSWORD) {
-    sessionStorage.setItem('pt-auth', '1');
+    if (remember) localStorage.setItem('pt-auth', '1');
+    else sessionStorage.setItem('pt-auth', '1');
     document.getElementById('gate').style.display = 'none';
     document.getElementById('app').classList.add('visible');
     init();
@@ -205,50 +217,36 @@ function checkGate() {
     input.value = '';
     setTimeout(() => { input.classList.remove('shake'); err.textContent = ''; }, 800);
   }
-}
+};
 
-if (sessionStorage.getItem('pt-auth') === '1') {
+if (localStorage.getItem('pt-auth') === '1' || sessionStorage.getItem('pt-auth') === '1') {
   document.getElementById('gate').style.display = 'none';
   document.getElementById('app').classList.add('visible');
-}
-
-// ── STORAGE ──
-function todayKey() { return new Date().toISOString().slice(0, 10); }
-
-function loadChecked(session) {
-  try { return JSON.parse(localStorage.getItem(`pt_${session}_${todayKey()}`) || '{}'); }
-  catch { return {}; }
-}
-
-function saveChecked(session, checked) {
-  localStorage.setItem(`pt_${session}_${todayKey()}`, JSON.stringify(checked));
 }
 
 // ── RENDER ──
 function render() {
   const exercises = EXERCISES[currentTab];
-  const checked   = loadChecked(currentTab);
+  const checked   = fbChecked[currentTab];
   const done      = exercises.filter(e => checked[e.id]).length;
   const total     = exercises.length;
   const pct       = Math.round((done / total) * 100);
 
-  // Header
   const today = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
   document.getElementById('hdr-date').textContent = today;
   document.getElementById('hdr-progress').textContent =
     `${currentTab === 'morning' ? 'Morning' : 'Evening'} · ${done}/${total} done`;
   const fill = document.getElementById('progress-fill');
-  fill.style.width = pct + '%';
+  fill.style.width   = pct + '%';
   fill.style.background = pct === 100 ? '#4caf50' : '#c8a96e';
 
-  // Exercise list
   const list = document.getElementById('exercise-list');
   list.innerHTML = '';
   exercises.forEach(ex => {
     const isDone = !!checked[ex.id];
-    const btn = document.createElement('button');
+    const btn    = document.createElement('button');
     btn.className = 'ex-btn' + (isDone ? ' done' : '');
-    btn.onclick = () => toggle(ex.id);
+    btn.onclick   = () => toggle(ex.id);
     btn.innerHTML = `
       <div class="ex-circle">
         ${isDone ? `<svg width="14" height="10" viewBox="0 0 14 10" fill="none">
@@ -262,40 +260,58 @@ function render() {
     list.appendChild(btn);
   });
 
-  // Complete message
   const msg = document.getElementById('complete-msg');
   if (done === total) {
     msg.style.display = 'block';
-    msg.textContent = currentTab === 'morning'
+    msg.textContent   = currentTab === 'morning'
       ? 'Morning session done 💪 See you tonight.'
       : 'Evening session done. Rest up 🌙';
   } else {
     msg.style.display = 'none';
   }
 
-  // Day counter
   const days = Math.floor((new Date() - SURGERY_DATE) / 86400000);
   document.getElementById('day-counter').textContent =
     `Day ${days} post-op · BPTB ACL + partial meniscectomy`;
 }
 
-function toggle(id) {
-  const checked = loadChecked(currentTab);
-  checked[id] = !checked[id];
-  saveChecked(currentTab, checked);
+async function toggle(id) {
+  const checked    = fbChecked[currentTab];
+  checked[id]      = !checked[id];
+  localSave(currentTab, checked);
   render();
+  await fbSave(currentTab, checked);
 }
 
-function switchTab(tab) {
+window.switchTab = function(tab) {
   currentTab = tab;
   document.getElementById('tab-morning').classList.toggle('active', tab === 'morning');
   document.getElementById('tab-evening').classList.toggle('active', tab === 'evening');
   render();
+};
+
+async function init() {
+  setSyncStatus('Loading…');
+  const [m, e] = await Promise.all([
+    fbLoad('morning').catch(() => localLoad('morning')),
+    fbLoad('evening').catch(() => localLoad('evening')),
+  ]);
+  fbChecked.morning = m;
+  fbChecked.evening = e;
+  setSyncStatus('');
+  render();
+
+  // Live sync — reflect changes from other devices
+  onValue(ref(db, `pt-tracker/ashley/${todayKey()}`), snap => {
+    if (!snap.exists()) return;
+    const data = snap.val();
+    if (data.morning) fbChecked.morning = data.morning;
+    if (data.evening) fbChecked.evening = data.evening;
+    render();
+  });
 }
 
-function init() { render(); }
-
-if (sessionStorage.getItem('pt-auth') === '1') init();
+if (localStorage.getItem('pt-auth') === '1' || sessionStorage.getItem('pt-auth') === '1') init();
 </script>
 </body>
 </html>
