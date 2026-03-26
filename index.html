@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ashley PT Tracker</title>
+  <meta name="theme-color" content="#2c2a27" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="PT Tracker" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #f5f2ee; font-family: 'DM Sans', sans-serif; }
+
+    /* ── GATE ── */
+    #gate {
+      position: fixed; inset: 0; z-index: 999;
+      background: #2c2a27;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 16px;
+    }
+    #gate h2 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 2rem; color: #fff; letter-spacing: -0.3px;
+    }
+    #gate-sub { font-size: 13px; color: #9e9890; letter-spacing: 1px; }
+    #gate-input {
+      background: #3a3835; border: 1.5px solid #555;
+      color: #fff; font-family: 'DM Sans', sans-serif;
+      font-size: 1rem; letter-spacing: 3px;
+      padding: 12px 20px; border-radius: 10px;
+      text-align: center; width: 220px; outline: none;
+      transition: border-color 0.2s;
+    }
+    #gate-input:focus { border-color: #c8a96e; }
+    #gate-input.shake { animation: shake 0.3s ease; border-color: #e57373; }
+    @keyframes shake {
+      0%,100% { transform: translateX(0); }
+      25% { transform: translateX(-8px); }
+      75% { transform: translateX(8px); }
+    }
+    #gate-btn {
+      background: #c8a96e; color: #2c2a27; border: none;
+      font-family: 'DM Sans', sans-serif; font-size: 13px;
+      font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase;
+      padding: 12px 32px; border-radius: 10px; cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    #gate-btn:hover { opacity: 0.85; }
+    #gate-error { font-size: 12px; color: #e57373; height: 16px; letter-spacing: 1px; }
+
+    /* ── APP ── */
+    #app { display: none; }
+    #app.visible { display: block; }
+
+    .header {
+      background: #2c2a27; padding: 28px 24px 24px; color: #fff;
+    }
+    .header-title {
+      font-family: 'DM Serif Display', serif;
+      font-size: 26px; letter-spacing: -0.3px; margin-bottom: 2px;
+    }
+    .header-date { font-size: 13px; color: #9e9890; margin-bottom: 20px; }
+    .progress-label {
+      font-size: 12px; color: #9e9890; margin-bottom: 6px;
+      font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase;
+    }
+    .progress-bar {
+      height: 6px; background: #454340; border-radius: 3px; overflow: hidden;
+    }
+    .progress-fill {
+      height: 100%; border-radius: 3px; transition: width 0.4s ease;
+    }
+
+    .tab-wrap {
+      display: flex; margin: 20px 20px 0;
+      background: #e8e4df; border-radius: 12px; padding: 4px;
+    }
+    .tab-btn {
+      flex: 1; padding: 10px; border: none; border-radius: 9px;
+      font-family: 'DM Sans', sans-serif; font-size: 14px; cursor: pointer;
+      transition: all 0.2s;
+    }
+    .tab-btn.active {
+      background: #fff; color: #2c2a27; font-weight: 600;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    }
+    .tab-btn:not(.active) { background: transparent; color: #9e9890; font-weight: 400; }
+
+    .exercises { padding: 20px 20px 0; }
+
+    .ex-btn {
+      display: flex; align-items: center; gap: 14px; width: 100%;
+      border-radius: 14px; padding: 16px 18px; cursor: pointer;
+      border: 1.5px solid #e0ddd8; background: #fff;
+      text-align: left; margin-bottom: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+      transition: all 0.2s ease;
+    }
+    .ex-btn.done {
+      background: #e8f5e9; border-color: #81c784; box-shadow: none;
+    }
+    .ex-circle {
+      width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+      border: 2px solid #c5bfb8; background: transparent;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s ease;
+    }
+    .ex-btn.done .ex-circle {
+      background: #4caf50; border: none;
+    }
+    .ex-name {
+      font-size: 15px; font-weight: 600; color: #2c2a27;
+      line-height: 1.3;
+    }
+    .ex-btn.done .ex-name { color: #558b5a; text-decoration: line-through; }
+    .ex-detail { font-size: 13px; color: #9e9890; margin-top: 2px; }
+    .ex-btn.done .ex-detail { color: #81c784; }
+
+    .complete-msg {
+      margin: 16px 20px 0; background: #e8f5e9;
+      border: 1.5px solid #81c784; border-radius: 14px;
+      padding: 16px; text-align: center;
+      color: #388e3c; font-weight: 600; font-size: 15px;
+    }
+
+    .day-counter {
+      margin: 20px 20px 0; text-align: center;
+      color: #9e9890; font-size: 13px; padding-bottom: 40px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- GATE -->
+<div id="gate">
+  <h2>Ashley PT Tracker</h2>
+  <div id="gate-sub">ACL Recovery · Post-Op</div>
+  <input id="gate-input" type="password" placeholder="Password" autocomplete="off"
+    onkeydown="if(event.key==='Enter') checkGate()" />
+  <div id="gate-error"></div>
+  <button id="gate-btn" onclick="checkGate()">Enter</button>
+</div>
+
+<!-- APP -->
+<div id="app">
+
+  <div class="header">
+    <div class="header-title">ACL Recovery</div>
+    <div class="header-date" id="hdr-date"></div>
+    <div class="progress-label" id="hdr-progress"></div>
+    <div class="progress-bar">
+      <div class="progress-fill" id="progress-fill"></div>
+    </div>
+  </div>
+
+  <div class="tab-wrap">
+    <button class="tab-btn active" id="tab-morning" onclick="switchTab('morning')">☀️ Morning</button>
+    <button class="tab-btn" id="tab-evening" onclick="switchTab('evening')">🌙 Evening</button>
+  </div>
+
+  <div class="exercises" id="exercise-list"></div>
+  <div id="complete-msg" class="complete-msg" style="display:none;"></div>
+  <div class="day-counter" id="day-counter"></div>
+
+</div>
+
+<script>
+const EXERCISES = {
+  morning: [
+    { id: "m1", name: "Calf Raises",            detail: "2 × 20" },
+    { id: "m2", name: "Hip Flexor",              detail: "2 × 20" },
+    { id: "m3", name: "Hip Abduction",           detail: "2 × 20" },
+    { id: "m4", name: "Heel Slides",             detail: "2 × 15" },
+    { id: "m5", name: "Heel Slide with Strap",   detail: "2 × 10 · supine" },
+    { id: "m6", name: "Prone Quads",             detail: "× 30 · 3 sec hold each" },
+  ],
+  evening: [
+    { id: "e1", name: "Heel Slide with Strap",   detail: "2 × 10 · supine" },
+    { id: "e2", name: "Quad Set",                detail: "2 × 10 · 10 sec hold each" },
+    { id: "e3", name: "Active SLR with Quad Set",detail: "3 × 10" },
+  ],
+};
+
+const SURGERY_DATE = new Date("2026-03-19");
+const PASSWORD     = "Bravo";
+
+let currentTab = "morning";
+
+// ── AUTH ──
+function checkGate() {
+  const input = document.getElementById('gate-input');
+  const err   = document.getElementById('gate-error');
+  if (input.value === PASSWORD) {
+    sessionStorage.setItem('pt-auth', '1');
+    document.getElementById('gate').style.display = 'none';
+    document.getElementById('app').classList.add('visible');
+    init();
+  } else {
+    err.textContent = 'Wrong password';
+    input.classList.add('shake');
+    input.value = '';
+    setTimeout(() => { input.classList.remove('shake'); err.textContent = ''; }, 800);
+  }
+}
+
+if (sessionStorage.getItem('pt-auth') === '1') {
+  document.getElementById('gate').style.display = 'none';
+  document.getElementById('app').classList.add('visible');
+}
+
+// ── STORAGE ──
+function todayKey() { return new Date().toISOString().slice(0, 10); }
+
+function loadChecked(session) {
+  try { return JSON.parse(localStorage.getItem(`pt_${session}_${todayKey()}`) || '{}'); }
+  catch { return {}; }
+}
+
+function saveChecked(session, checked) {
+  localStorage.setItem(`pt_${session}_${todayKey()}`, JSON.stringify(checked));
+}
+
+// ── RENDER ──
+function render() {
+  const exercises = EXERCISES[currentTab];
+  const checked   = loadChecked(currentTab);
+  const done      = exercises.filter(e => checked[e.id]).length;
+  const total     = exercises.length;
+  const pct       = Math.round((done / total) * 100);
+
+  // Header
+  const today = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+  document.getElementById('hdr-date').textContent = today;
+  document.getElementById('hdr-progress').textContent =
+    `${currentTab === 'morning' ? 'Morning' : 'Evening'} · ${done}/${total} done`;
+  const fill = document.getElementById('progress-fill');
+  fill.style.width = pct + '%';
+  fill.style.background = pct === 100 ? '#4caf50' : '#c8a96e';
+
+  // Exercise list
+  const list = document.getElementById('exercise-list');
+  list.innerHTML = '';
+  exercises.forEach(ex => {
+    const isDone = !!checked[ex.id];
+    const btn = document.createElement('button');
+    btn.className = 'ex-btn' + (isDone ? ' done' : '');
+    btn.onclick = () => toggle(ex.id);
+    btn.innerHTML = `
+      <div class="ex-circle">
+        ${isDone ? `<svg width="14" height="10" viewBox="0 0 14 10" fill="none">
+          <path d="M1 5L5 9L13 1" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>` : ''}
+      </div>
+      <div>
+        <div class="ex-name">${ex.name}</div>
+        <div class="ex-detail">${ex.detail}</div>
+      </div>`;
+    list.appendChild(btn);
+  });
+
+  // Complete message
+  const msg = document.getElementById('complete-msg');
+  if (done === total) {
+    msg.style.display = 'block';
+    msg.textContent = currentTab === 'morning'
+      ? 'Morning session done 💪 See you tonight.'
+      : 'Evening session done. Rest up 🌙';
+  } else {
+    msg.style.display = 'none';
+  }
+
+  // Day counter
+  const days = Math.floor((new Date() - SURGERY_DATE) / 86400000);
+  document.getElementById('day-counter').textContent =
+    `Day ${days} post-op · BPTB ACL + partial meniscectomy`;
+}
+
+function toggle(id) {
+  const checked = loadChecked(currentTab);
+  checked[id] = !checked[id];
+  saveChecked(currentTab, checked);
+  render();
+}
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.getElementById('tab-morning').classList.toggle('active', tab === 'morning');
+  document.getElementById('tab-evening').classList.toggle('active', tab === 'evening');
+  render();
+}
+
+function init() { render(); }
+
+if (sessionStorage.getItem('pt-auth') === '1') init();
+</script>
+</body>
+</html>
