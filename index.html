@@ -52,51 +52,8 @@
     #gate-error { font-size: 12px; color: #e57373; height: 16px; letter-spacing: 1px; }
 
     /* ── APP ── */
-    #app { display: none; }
-    #app.visible { display: block; }
-
-    .header { background: #2c2a27; padding: 28px 24px 24px; color: #fff; }
-    .header-title { font-family: 'DM Serif Display', serif; font-size: 26px; letter-spacing: -0.3px; margin-bottom: 2px; }
-    .header-date { font-size: 13px; color: #9e9890; margin-bottom: 20px; }
-    .progress-label { font-size: 12px; color: #9e9890; margin-bottom: 6px; font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; }
-    .progress-bar { height: 6px; background: #454340; border-radius: 3px; overflow: hidden; }
-    .progress-fill { height: 100%; border-radius: 3px; transition: width 0.4s ease; }
-
-    .tab-wrap { display: flex; margin: 20px 20px 0; background: #e8e4df; border-radius: 12px; padding: 4px; }
-    .tab-btn { flex: 1; padding: 10px; border: none; border-radius: 9px; font-family: 'DM Sans', sans-serif; font-size: 14px; cursor: pointer; transition: all 0.2s; }
-    .tab-btn.active { background: #fff; color: #2c2a27; font-weight: 600; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
-    .tab-btn:not(.active) { background: transparent; color: #9e9890; font-weight: 400; }
-
-    .exercises { padding: 20px 20px 0; }
-    .ex-btn {
-      display: flex; align-items: center; gap: 14px; width: 100%;
-      border-radius: 14px; padding: 16px 18px; cursor: pointer;
-      border: 1.5px solid #e0ddd8; background: #fff; text-align: left;
-      margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); transition: all 0.2s ease;
-    }
-    .ex-btn.done { background: #e8f5e9; border-color: #81c784; box-shadow: none; }
-    .ex-circle {
-      width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
-      border: 2px solid #c5bfb8; background: transparent;
-      display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;
-    }
-    .ex-btn.done .ex-circle { background: #4caf50; border: none; }
-    .ex-name { font-size: 15px; font-weight: 600; color: #2c2a27; line-height: 1.3; }
-    .ex-btn.done .ex-name { color: #558b5a; text-decoration: line-through; }
-    .ex-detail { font-size: 13px; color: #9e9890; margin-top: 2px; }
-    .ex-btn.done .ex-detail { color: #81c784; }
-
-    .complete-msg {
-      margin: 16px 20px 0; background: #e8f5e9; border: 1.5px solid #81c784;
-      border-radius: 14px; padding: 16px; text-align: center;
-      color: #388e3c; font-weight: 600; font-size: 15px;
-    }
-    .day-counter { margin: 20px 20px 0; text-align: center; color: #9e9890; font-size: 13px; padding-bottom: 40px; }
-
-    .sync-status {
-      text-align: center; font-size: 11px; color: #9e9890;
-      letter-spacing: 0.5px; padding: 8px 20px 0;
-    }
+    #root { display: none; }
+    #root.visible { display: block; }
   </style>
 </head>
 <body>
@@ -114,204 +71,271 @@
   <button id="gate-btn" onclick="checkGate()">Enter</button>
 </div>
 
-<!-- APP -->
-<div id="app">
-  <div class="header">
-    <div class="header-title">ACL Recovery</div>
-    <div class="header-date" id="hdr-date"></div>
-    <div class="progress-label" id="hdr-progress"></div>
-    <div class="progress-bar">
-      <div class="progress-fill" id="progress-fill"></div>
-    </div>
-  </div>
+<!-- APP ROOT -->
+<div id="root"></div>
 
-  <div class="tab-wrap">
-    <button class="tab-btn active" id="tab-morning" onclick="switchTab('morning')">☀️ Morning</button>
-    <button class="tab-btn" id="tab-evening" onclick="switchTab('evening')">🌙 Evening</button>
-  </div>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-  <div class="exercises" id="exercise-list"></div>
-  <div id="complete-msg" class="complete-msg" style="display:none;"></div>
-  <div class="day-counter" id="day-counter"></div>
-  <div class="sync-status" id="sync-status"></div>
-</div>
+<script>
+  const PASSWORD = "Bravo";
 
-<script type="module">
-import { initializeApp }             from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
-import { getDatabase, ref, set, get, onValue } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js';
+  window.checkGate = function() {
+    const input    = document.getElementById('gate-input');
+    const err      = document.getElementById('gate-error');
+    const remember = document.getElementById('gate-remember').checked;
+    if (input.value === PASSWORD) {
+      if (remember) localStorage.setItem('pt-auth', '1');
+      else sessionStorage.setItem('pt-auth', '1');
+      document.getElementById('gate').style.display = 'none';
+      document.getElementById('root').classList.add('visible');
+    } else {
+      err.textContent = 'Wrong password';
+      input.classList.add('shake');
+      input.value = '';
+      setTimeout(() => { input.classList.remove('shake'); err.textContent = ''; }, 800);
+    }
+  };
 
-const FB_CONFIG = {
-  apiKey:      "AIzaSyARK54MtzxGbPd78iHqfwrIDXodfdrTa90",
-  databaseURL: "https://baja-trip-a8117-default-rtdb.firebaseio.com",
-};
-const fbApp = initializeApp(FB_CONFIG);
-const db    = getDatabase(fbApp);
-
-const EXERCISES = {
-  morning: [
-    { id: "m1", name: "Calf Raises",             detail: "2 × 20" },
-    { id: "m2", name: "Hip Flexor",               detail: "2 × 20" },
-    { id: "m3", name: "Hip Abduction",            detail: "2 × 20" },
-    { id: "m4", name: "Heel Slides",              detail: "2 × 15" },
-    { id: "m5", name: "Heel Slide with Strap",    detail: "2 × 10 · supine" },
-    { id: "m6", name: "Prone Quads",              detail: "× 30 · 3 sec hold each" },
-  ],
-  evening: [
-    { id: "e1", name: "Heel Slide with Strap",    detail: "2 × 10 · supine" },
-    { id: "e2", name: "Quad Set",                 detail: "2 × 10 · 10 sec hold each" },
-    { id: "e3", name: "Active SLR with Quad Set", detail: "3 × 10" },
-  ],
-};
-
-const SURGERY_DATE = new Date("2026-03-19");
-const PASSWORD     = "Bravo";
-let currentTab     = "morning";
-let fbChecked      = { morning: {}, evening: {} };
-
-// ── HELPERS ──
-function todayKey() { return new Date().toISOString().slice(0, 10); }
-function fbPath(session) { return `pt-tracker/ashley/${todayKey()}/${session}`; }
-function setSyncStatus(msg) { document.getElementById('sync-status').textContent = msg; }
-
-// ── FIREBASE SYNC ──
-async function fbLoad(session) {
-  try {
-    const snap = await get(ref(db, fbPath(session)));
-    return snap.exists() ? snap.val() : {};
-  } catch { return {}; }
-}
-
-async function fbSave(session, checked) {
-  try {
-    await set(ref(db, fbPath(session)), checked);
-    setSyncStatus('✓ Synced');
-    setTimeout(() => setSyncStatus(''), 2000);
-  } catch {
-    setSyncStatus('⚠ Offline — saved locally');
+  if (localStorage.getItem('pt-auth') === '1' || sessionStorage.getItem('pt-auth') === '1') {
+    document.getElementById('gate').style.display = 'none';
+    document.getElementById('root').classList.add('visible');
   }
+</script>
+
+<script type="text/babel">
+const { useState, useEffect } = React;
+
+const EXERCISES = [
+  // Standing first
+  { id: "e1", name: "Calf Raises",           detail: "× 20",  sets: 2, note: "standing" },
+  { id: "e2", name: "Hip Flexor",             detail: "× 20",  sets: 2, note: "standing" },
+  { id: "e3", name: "Heel Slides",            detail: "× 15",  sets: 2, note: "standing" },
+  // Floor
+  { id: "e4", name: "Hip Abductions",         detail: "× 20",  sets: 2 },
+  { id: "e5", name: "Quad Sets",              detail: "× 10",  sets: 2, note: "10 sec hold each" },
+  { id: "e6", name: "Leg Raises",             detail: "× 10",  sets: 3 },
+  { id: "e7", name: "Prone Quad Activations", detail: "× 30",  sets: 1, note: "3 sec hold each" },
+  { id: "e8", name: "Heel Slides with Strap", detail: "× 10",  sets: 2, note: "supine" },
+];
+
+const TOTAL_SETS = EXERCISES.reduce((sum, ex) => sum + ex.sets, 0);
+const SURGERY_DATE = new Date("2026-03-19");
+const DAY_LABELS = ["M","T","W","T","F","S","S"];
+
+const toKey = (d) => d.toISOString().slice(0, 10);
+const todayKey = () => toKey(new Date());
+
+function getWeekDays() {
+  const today = new Date();
+  const dow = today.getDay();
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - ((dow + 6) % 7));
+  return Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    return { label: DAY_LABELS[i], key: toKey(d), isToday: toKey(d) === todayKey() };
+  });
 }
 
-// ── LOCAL FALLBACK ──
-function localLoad(session) {
-  try { return JSON.parse(localStorage.getItem(`pt_${session}_${todayKey()}`) || '{}'); }
+function loadSets(dateKey) {
+  try { return JSON.parse(localStorage.getItem(`pt_sets_${dateKey}`) || "{}"); }
   catch { return {}; }
 }
-function localSave(session, checked) {
-  localStorage.setItem(`pt_${session}_${todayKey()}`, JSON.stringify(checked));
+function saveSets(dateKey, data) {
+  localStorage.setItem(`pt_sets_${dateKey}`, JSON.stringify(data));
 }
 
-// ── AUTH ──
-window.checkGate = function() {
-  const input    = document.getElementById('gate-input');
-  const err      = document.getElementById('gate-error');
-  const remember = document.getElementById('gate-remember').checked;
-  if (input.value === PASSWORD) {
-    if (remember) localStorage.setItem('pt-auth', '1');
-    else sessionStorage.setItem('pt-auth', '1');
-    document.getElementById('gate').style.display = 'none';
-    document.getElementById('app').classList.add('visible');
-    init();
-  } else {
-    err.textContent = 'Wrong password';
-    input.classList.add('shake');
-    input.value = '';
-    setTimeout(() => { input.classList.remove('shake'); err.textContent = ''; }, 800);
-  }
-};
-
-if (localStorage.getItem('pt-auth') === '1' || sessionStorage.getItem('pt-auth') === '1') {
-  document.getElementById('gate').style.display = 'none';
-  document.getElementById('app').classList.add('visible');
+function countDone(setsData) {
+  return Object.values(setsData).filter(Boolean).length;
 }
 
-// ── RENDER ──
-function render() {
-  const exercises = EXERCISES[currentTab];
-  const checked   = fbChecked[currentTab];
-  const done      = exercises.filter(e => checked[e.id]).length;
-  const total     = exercises.length;
-  const pct       = Math.round((done / total) * 100);
+function getDayStatus(dateKey) {
+  const done = countDone(loadSets(dateKey));
+  if (done === 0) return "red";
+  if (done >= TOTAL_SETS) return "green";
+  return "orange";
+}
 
-  const today = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
-  document.getElementById('hdr-date').textContent = today;
-  document.getElementById('hdr-progress').textContent =
-    `${currentTab === 'morning' ? 'Morning' : 'Evening'} · ${done}/${total} done`;
-  const fill = document.getElementById('progress-fill');
-  fill.style.width   = pct + '%';
-  fill.style.background = pct === 100 ? '#4caf50' : '#c8a96e';
+const STATUS_COLORS = { red: "#e53935", orange: "#fb8c00", green: "#43a047" };
 
-  const list = document.getElementById('exercise-list');
-  list.innerHTML = '';
-  exercises.forEach(ex => {
-    const isDone = !!checked[ex.id];
-    const btn    = document.createElement('button');
-    btn.className = 'ex-btn' + (isDone ? ' done' : '');
-    btn.onclick   = () => toggle(ex.id);
-    btn.innerHTML = `
-      <div class="ex-circle">
-        ${isDone ? `<svg width="14" height="10" viewBox="0 0 14 10" fill="none">
-          <path d="M1 5L5 9L13 1" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>` : ''}
+function WeekBar() {
+  const days = getWeekDays();
+  return (
+    <div style={{ display: "flex", justifyContent: "space-between", padding: "0 4px", marginTop: "16px" }}>
+      {days.map(({ label, key, isToday }) => {
+        const status = getDayStatus(key);
+        const color = STATUS_COLORS[status];
+        return (
+          <div key={key} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "5px" }}>
+            <div style={{
+              width: "34px", height: "34px", borderRadius: "50%",
+              background: color,
+              border: isToday ? "2.5px solid #fff" : "none",
+              boxShadow: isToday ? "0 0 0 2px " + color : "none",
+              display: "flex", alignItems: "center", justifyContent: "center",
+            }} />
+            <div style={{
+              fontSize: "11px", fontWeight: isToday ? "700" : "400",
+              color: isToday ? "#fff" : "#9e9890",
+              fontFamily: "'DM Sans', sans-serif",
+            }}>{label}</div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function SetBubbles({ exId, sets, setsData, onToggle }) {
+  return (
+    <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
+      {Array.from({ length: sets }, (_, i) => {
+        const key = `${exId}_${i}`;
+        const done = !!setsData[key];
+        return (
+          <button
+            key={i}
+            onClick={(e) => { e.stopPropagation(); onToggle(key); }}
+            style={{
+              width: "32px", height: "32px", borderRadius: "50%",
+              border: done ? "none" : "2px solid #c5bfb8",
+              background: done ? "#4caf50" : "transparent",
+              cursor: "pointer",
+              display: "flex", alignItems: "center", justifyContent: "center",
+              transition: "all 0.2s ease",
+              fontSize: "11px", fontWeight: "700",
+              color: done ? "#fff" : "#9e9890",
+              flexShrink: 0,
+            }}
+          >
+            {done ? (
+              <svg width="12" height="9" viewBox="0 0 14 10" fill="none">
+                <path d="M1 5L5 9L13 1" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            ) : i + 1}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function ExerciseItem({ ex, setsData, onToggle }) {
+  const doneSets = Array.from({ length: ex.sets }, (_, i) => setsData[`${ex.id}_${i}`]).filter(Boolean).length;
+  const allDone = doneSets === ex.sets;
+
+  return (
+    <div style={{
+      display: "flex", alignItems: "center", gap: "14px",
+      background: allDone ? "#e8f5e9" : "#fff",
+      border: allDone ? "1.5px solid #81c784" : "1.5px solid #e0ddd8",
+      borderRadius: "14px", padding: "14px 16px",
+      marginBottom: "10px",
+      boxShadow: allDone ? "none" : "0 1px 4px rgba(0,0,0,0.06)",
+      transition: "all 0.2s ease",
+    }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{
+          fontFamily: "'DM Sans', sans-serif", fontSize: "15px", fontWeight: "600",
+          color: allDone ? "#558b5a" : "#2c2a27",
+          textDecoration: allDone ? "line-through" : "none",
+          lineHeight: 1.3,
+        }}>
+          {ex.name}
+        </div>
+        <div style={{
+          fontFamily: "'DM Sans', sans-serif", fontSize: "12px",
+          color: allDone ? "#81c784" : "#9e9890", marginTop: "2px",
+        }}>
+          {ex.detail}{ex.note ? ` · ${ex.note}` : ""}
+          {ex.sets > 1 ? ` · ${doneSets}/${ex.sets} sets` : ""}
+        </div>
       </div>
-      <div>
-        <div class="ex-name">${ex.name}</div>
-        <div class="ex-detail">${ex.detail}</div>
-      </div>`;
-    list.appendChild(btn);
-  });
-
-  const msg = document.getElementById('complete-msg');
-  if (done === total) {
-    msg.style.display = 'block';
-    msg.textContent   = currentTab === 'morning'
-      ? 'Morning session done 💪 See you tonight.'
-      : 'Evening session done. Rest up 🌙';
-  } else {
-    msg.style.display = 'none';
-  }
-
-  const days = Math.floor((new Date() - SURGERY_DATE) / 86400000);
-  document.getElementById('day-counter').textContent =
-    `Day ${days} post-op · BPTB ACL + partial meniscectomy`;
+      <SetBubbles exId={ex.id} sets={ex.sets} setsData={setsData} onToggle={onToggle} />
+    </div>
+  );
 }
 
-async function toggle(id) {
-  const checked    = fbChecked[currentTab];
-  checked[id]      = !checked[id];
-  localSave(currentTab, checked);
-  render();
-  await fbSave(currentTab, checked);
+function PTTracker() {
+  const [setsData, setSetsData] = useState(() => loadSets(todayKey()));
+
+  const toggle = (key) => {
+    const next = { ...setsData, [key]: !setsData[key] };
+    setSetsData(next);
+    saveSets(todayKey(), next);
+  };
+
+  const done = countDone(setsData);
+  const pct = Math.round((done / TOTAL_SETS) * 100);
+  const allDone = done >= TOTAL_SETS;
+  const today = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+  const dayNum = Math.floor((new Date() - SURGERY_DATE) / 86400000);
+
+  return (
+    <div style={{ minHeight: "100vh", background: "#f5f2ee", fontFamily: "'DM Sans', sans-serif", paddingBottom: "40px" }}>
+      {/* Header */}
+      <div style={{ background: "#2c2a27", padding: "28px 24px 24px", color: "#fff" }}>
+        <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: "26px", letterSpacing: "-0.3px", marginBottom: "2px" }}>
+          ACL Recovery
+        </div>
+        <div style={{ fontSize: "13px", color: "#9e9890", marginBottom: "4px" }}>{today}</div>
+        <div style={{ fontSize: "12px", color: "#9e9890", marginBottom: "16px" }}>
+          Day {dayNum} post-op · BPTB ACL + partial meniscectomy
+        </div>
+
+        {/* Weekly tracker */}
+        <WeekBar />
+
+        {/* Progress bar */}
+        <div style={{ marginTop: "20px" }}>
+          <div style={{ fontSize: "12px", color: "#9e9890", marginBottom: "6px", fontWeight: "500", letterSpacing: "0.5px", textTransform: "uppercase" }}>
+            {done}/{TOTAL_SETS} sets done
+          </div>
+          <div style={{ height: "6px", background: "#454340", borderRadius: "3px", overflow: "hidden" }}>
+            <div style={{
+              height: "100%", width: `${pct}%`,
+              background: allDone ? "#4caf50" : "#c8a96e",
+              borderRadius: "3px", transition: "width 0.4s ease",
+            }} />
+          </div>
+        </div>
+      </div>
+
+      {/* Exercise list */}
+      <div style={{ padding: "20px 20px 0" }}>
+        <div style={{ fontSize: "11px", fontWeight: "600", color: "#9e9890", letterSpacing: "0.8px", textTransform: "uppercase", marginBottom: "10px" }}>
+          Standing
+        </div>
+        {EXERCISES.slice(0, 3).map(ex => (
+          <ExerciseItem key={ex.id} ex={ex} setsData={setsData} onToggle={toggle} />
+        ))}
+
+        <div style={{ fontSize: "11px", fontWeight: "600", color: "#9e9890", letterSpacing: "0.8px", textTransform: "uppercase", margin: "16px 0 10px" }}>
+          Floor
+        </div>
+        {EXERCISES.slice(3).map(ex => (
+          <ExerciseItem key={ex.id} ex={ex} setsData={setsData} onToggle={toggle} />
+        ))}
+      </div>
+
+      {allDone && (
+        <div style={{
+          margin: "16px 20px 0", background: "#e8f5e9", border: "1.5px solid #81c784",
+          borderRadius: "14px", padding: "16px", textAlign: "center",
+          color: "#388e3c", fontWeight: "600", fontSize: "15px",
+        }}>
+          All done for today 💪 Rest up.
+        </div>
+      )}
+    </div>
+  );
 }
 
-window.switchTab = function(tab) {
-  currentTab = tab;
-  document.getElementById('tab-morning').classList.toggle('active', tab === 'morning');
-  document.getElementById('tab-evening').classList.toggle('active', tab === 'evening');
-  render();
-};
-
-async function init() {
-  setSyncStatus('Loading…');
-  const [m, e] = await Promise.all([
-    fbLoad('morning').catch(() => localLoad('morning')),
-    fbLoad('evening').catch(() => localLoad('evening')),
-  ]);
-  fbChecked.morning = m;
-  fbChecked.evening = e;
-  setSyncStatus('');
-  render();
-
-  // Live sync — reflect changes from other devices
-  onValue(ref(db, `pt-tracker/ashley/${todayKey()}`), snap => {
-    if (!snap.exists()) return;
-    const data = snap.val();
-    if (data.morning) fbChecked.morning = data.morning;
-    if (data.evening) fbChecked.evening = data.evening;
-    render();
-  });
-}
-
-if (localStorage.getItem('pt-auth') === '1' || sessionStorage.getItem('pt-auth') === '1') init();
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<PTTracker />);
 </script>
+
 </body>
 </html>
