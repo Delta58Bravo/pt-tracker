@@ -149,15 +149,65 @@
 <script type="text/babel">
 const { useState, useEffect, useRef } = React;
 
+// ── CONFETTI ──
+function launchConfetti() {
+  const canvas = document.createElement("canvas");
+  canvas.style.cssText = "position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999";
+  document.body.appendChild(canvas);
+  const ctx = canvas.getContext("2d");
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  const pieces = Array.from({ length: 120 }, () => ({
+    x: Math.random() * canvas.width, y: Math.random() * -canvas.height,
+    w: Math.random() * 10 + 6, h: Math.random() * 6 + 4,
+    color: ["#4caf50","#c8a96e","#2c2a27","#81c784","#ff7043","#42a5f5","#ab47bc"][Math.floor(Math.random()*7)],
+    rot: Math.random() * 360, vx: (Math.random() - 0.5) * 3,
+    vy: Math.random() * 4 + 2, vr: (Math.random() - 0.5) * 6,
+  }));
+  let frame = 0;
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    pieces.forEach(p => {
+      ctx.save(); ctx.translate(p.x + p.w/2, p.y + p.h/2);
+      ctx.rotate((p.rot * Math.PI) / 180); ctx.fillStyle = p.color;
+      ctx.fillRect(-p.w/2, -p.h/2, p.w, p.h); ctx.restore();
+      p.x += p.vx; p.y += p.vy; p.rot += p.vr;
+    });
+    frame++;
+    if (frame < 120) requestAnimationFrame(draw);
+    else document.body.removeChild(canvas);
+  }
+  draw();
+}
+
+// ── WEEKLY RESET ──
+function clearOldWeekData() {
+  const today = new Date();
+  const dow = today.getDay();
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - ((dow + 6) % 7));
+  const weekStart = toKey(monday);
+  const lastReset = localStorage.getItem("pt_week_reset");
+  if (lastReset !== weekStart) {
+    Object.keys(localStorage).forEach(k => {
+      if (k.startsWith("pt_sets_")) {
+        const dateStr = k.replace("pt_sets_", "");
+        if (dateStr < weekStart) localStorage.removeItem(k);
+      }
+    });
+    localStorage.setItem("pt_week_reset", weekStart);
+  }
+}
+
 const EXERCISES = [
   { id: "e1", name: "Calf Raises",           detail: "× 20",  sets: 2, note: "standing" },
   { id: "e2", name: "Hip Flexor",             detail: "× 20",  sets: 2, note: "standing" },
   { id: "e3", name: "Heel Slides",            detail: "× 15",  sets: 2, note: "standing" },
   { id: "e4", name: "Hip Abductions",         detail: "× 20",  sets: 2 },
-  { id: "e5", name: "Quad Sets",              detail: "× 10",  sets: 2, note: "10 sec hold each" },
+  { id: "e5", name: "Quad Sets",              detail: "× 10",  sets: 4, note: "10 sec hold each" },
   { id: "e6", name: "Leg Raises",             detail: "× 10",  sets: 3 },
   { id: "e7", name: "Prone Quad Activations", detail: "× 30",  sets: 1, note: "3 sec hold each" },
-  { id: "e8", name: "Heel Slides with Strap", detail: "× 10",  sets: 2, note: "supine" },
+  { id: "e8", name: "Heel Slides with Strap", detail: "× 10",  sets: 4, note: "supine" },
 ];
 
 const TOTAL_SETS   = EXERCISES.reduce((sum, ex) => sum + ex.sets, 0);
@@ -271,9 +321,11 @@ function ExerciseItem({ ex, setsData, onToggle }) {
 }
 
 function PTTracker() {
+  clearOldWeekData();
   const [setsData,   setSetsData]   = useState(() => window.localLoad(todayKey()));
   const [syncStatus, setSyncStatus] = useState('');
-  const unsubRef = useRef(null);
+  const unsubRef    = useRef(null);
+  const prevAllDone = useRef(false);
 
   useEffect(() => {
     setSyncStatus('Loading…');
@@ -304,9 +356,14 @@ function PTTracker() {
     }).catch(() => setSyncStatus('⚠ Offline'));
   };
 
-  const done   = Object.values(setsData).filter(Boolean).length;
-  const pct    = Math.round((done / TOTAL_SETS) * 100);
+  const done    = Object.values(setsData).filter(Boolean).length;
+  const pct     = Math.round((done / TOTAL_SETS) * 100);
   const allDone = done >= TOTAL_SETS;
+
+  useEffect(() => {
+    if (allDone && !prevAllDone.current) launchConfetti();
+    prevAllDone.current = allDone;
+  }, [allDone]);
   const today  = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
   const dayNum = Math.floor((new Date() - SURGERY_DATE) / 86400000);
 
@@ -355,10 +412,14 @@ function PTTracker() {
       {allDone && (
         <div style={{
           margin: "16px 20px 0", background: "#e8f5e9", border: "1.5px solid #81c784",
-          borderRadius: "14px", padding: "16px", textAlign: "center",
-          color: "#388e3c", fontWeight: "600", fontSize: "15px",
+          borderRadius: "14px", padding: "20px 16px", textAlign: "center",
         }}>
-          All done for today 💪 Rest up.
+          <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: "22px", color: "#388e3c", marginBottom: "6px" }}>
+            Hell yeah sister! 🎉
+          </div>
+          <div style={{ fontSize: "14px", color: "#558b5a" }}>
+            All done for today. Go rest that knee.
+          </div>
         </div>
       )}
 
