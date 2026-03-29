@@ -15,7 +15,6 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { background: #f5f2ee; font-family: 'DM Sans', sans-serif; }
 
-    /* ── GATE ── */
     #gate {
       position: fixed; inset: 0; z-index: 999;
       background: #2c2a27;
@@ -51,7 +50,6 @@
     #gate-btn:hover { opacity: 0.85; }
     #gate-error { font-size: 12px; color: #e57373; height: 16px; letter-spacing: 1px; }
 
-    /* ── APP ── */
     #root { display: none; }
     #root.visible { display: block; }
   </style>
@@ -74,11 +72,44 @@
 <!-- APP ROOT -->
 <div id="root"></div>
 
+<!-- Firebase compat -->
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+
+<!-- React + Babel -->
 <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
 <script>
+  // ── Firebase init ──
+  firebase.initializeApp({
+    apiKey:      "AIzaSyARK54MtzxGbPd78iHqfwrIDXodfdrTa90",
+    databaseURL: "https://baja-trip-a8117-default-rtdb.firebaseio.com",
+  });
+  const db = firebase.database();
+
+  function toDateKey(d) { return d.toISOString().slice(0, 10); }
+  function todayKey()   { return toDateKey(new Date()); }
+  function fbPath(dateKey) { return `pt-tracker/ashley/${dateKey}/sets`; }
+
+  window.fbLoad = function(dateKey) {
+    return db.ref(fbPath(dateKey)).get()
+      .then(snap => snap.exists() ? snap.val() : {})
+      .catch(() => ({}));
+  };
+
+  window.fbSave = function(dateKey, data) {
+    return db.ref(fbPath(dateKey)).set(data).catch(() => {});
+  };
+
+  window.fbListen = function(dateKey, callback) {
+    const ref = db.ref(fbPath(dateKey));
+    ref.on('value', snap => { if (snap.exists()) callback(snap.val()); });
+    return () => ref.off();
+  };
+
+  // ── Gate ──
   const PASSWORD = "Bravo";
 
   window.checkGate = function() {
@@ -102,17 +133,24 @@
     document.getElementById('gate').style.display = 'none';
     document.getElementById('root').classList.add('visible');
   }
+
+  // ── localStorage fallback ──
+  window.localLoad = function(dateKey) {
+    try { return JSON.parse(localStorage.getItem(`pt_sets_${dateKey}`) || "{}"); }
+    catch { return {}; }
+  };
+  window.localSave = function(dateKey, data) {
+    localStorage.setItem(`pt_sets_${dateKey}`, JSON.stringify(data));
+  };
 </script>
 
 <script type="text/babel">
-const { useState, useEffect } = React;
+const { useState, useEffect, useRef } = React;
 
 const EXERCISES = [
-  // Standing first
   { id: "e1", name: "Calf Raises",           detail: "× 20",  sets: 2, note: "standing" },
   { id: "e2", name: "Hip Flexor",             detail: "× 20",  sets: 2, note: "standing" },
   { id: "e3", name: "Heel Slides",            detail: "× 15",  sets: 2, note: "standing" },
-  // Floor
   { id: "e4", name: "Hip Abductions",         detail: "× 20",  sets: 2 },
   { id: "e5", name: "Quad Sets",              detail: "× 10",  sets: 2, note: "10 sec hold each" },
   { id: "e6", name: "Leg Raises",             detail: "× 10",  sets: 3 },
@@ -120,16 +158,16 @@ const EXERCISES = [
   { id: "e8", name: "Heel Slides with Strap", detail: "× 10",  sets: 2, note: "supine" },
 ];
 
-const TOTAL_SETS = EXERCISES.reduce((sum, ex) => sum + ex.sets, 0);
+const TOTAL_SETS   = EXERCISES.reduce((sum, ex) => sum + ex.sets, 0);
 const SURGERY_DATE = new Date("2026-03-19");
-const DAY_LABELS = ["M","T","W","T","F","S","S"];
+const DAY_LABELS   = ["M","T","W","T","F","S","S"];
 
-const toKey = (d) => d.toISOString().slice(0, 10);
-const todayKey = () => toKey(new Date());
+const toKey    = (d) => d.toISOString().slice(0, 10);
+const todayKey = ()  => toKey(new Date());
 
 function getWeekDays() {
-  const today = new Date();
-  const dow = today.getDay();
+  const today  = new Date();
+  const dow    = today.getDay();
   const monday = new Date(today);
   monday.setDate(today.getDate() - ((dow + 6) % 7));
   return Array.from({ length: 7 }, (_, i) => {
@@ -139,20 +177,9 @@ function getWeekDays() {
   });
 }
 
-function loadSets(dateKey) {
-  try { return JSON.parse(localStorage.getItem(`pt_sets_${dateKey}`) || "{}"); }
-  catch { return {}; }
-}
-function saveSets(dateKey, data) {
-  localStorage.setItem(`pt_sets_${dateKey}`, JSON.stringify(data));
-}
-
-function countDone(setsData) {
-  return Object.values(setsData).filter(Boolean).length;
-}
-
 function getDayStatus(dateKey) {
-  const done = countDone(loadSets(dateKey));
+  const data = window.localLoad(dateKey);
+  const done = Object.values(data).filter(Boolean).length;
   if (done === 0) return "red";
   if (done >= TOTAL_SETS) return "green";
   return "orange";
@@ -165,8 +192,7 @@ function WeekBar() {
   return (
     <div style={{ display: "flex", justifyContent: "space-between", padding: "0 4px", marginTop: "16px" }}>
       {days.map(({ label, key, isToday }) => {
-        const status = getDayStatus(key);
-        const color = STATUS_COLORS[status];
+        const color = STATUS_COLORS[getDayStatus(key)];
         return (
           <div key={key} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "5px" }}>
             <div style={{
@@ -174,12 +200,10 @@ function WeekBar() {
               background: color,
               border: isToday ? "2.5px solid #fff" : "none",
               boxShadow: isToday ? "0 0 0 2px " + color : "none",
-              display: "flex", alignItems: "center", justifyContent: "center",
             }} />
             <div style={{
               fontSize: "11px", fontWeight: isToday ? "700" : "400",
               color: isToday ? "#fff" : "#9e9890",
-              fontFamily: "'DM Sans', sans-serif",
             }}>{label}</div>
           </div>
         );
@@ -192,24 +216,18 @@ function SetBubbles({ exId, sets, setsData, onToggle }) {
   return (
     <div style={{ display: "flex", gap: "8px", flexShrink: 0 }}>
       {Array.from({ length: sets }, (_, i) => {
-        const key = `${exId}_${i}`;
+        const key  = `${exId}_${i}`;
         const done = !!setsData[key];
         return (
-          <button
-            key={i}
-            onClick={(e) => { e.stopPropagation(); onToggle(key); }}
+          <button key={i} onClick={(e) => { e.stopPropagation(); onToggle(key); }}
             style={{
               width: "32px", height: "32px", borderRadius: "50%",
               border: done ? "none" : "2px solid #c5bfb8",
               background: done ? "#4caf50" : "transparent",
-              cursor: "pointer",
-              display: "flex", alignItems: "center", justifyContent: "center",
-              transition: "all 0.2s ease",
-              fontSize: "11px", fontWeight: "700",
-              color: done ? "#fff" : "#9e9890",
-              flexShrink: 0,
-            }}
-          >
+              cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+              transition: "all 0.2s ease", fontSize: "11px", fontWeight: "700",
+              color: done ? "#fff" : "#9e9890", flexShrink: 0,
+            }}>
             {done ? (
               <svg width="12" height="9" viewBox="0 0 14 10" fill="none">
                 <path d="M1 5L5 9L13 1" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -224,31 +242,23 @@ function SetBubbles({ exId, sets, setsData, onToggle }) {
 
 function ExerciseItem({ ex, setsData, onToggle }) {
   const doneSets = Array.from({ length: ex.sets }, (_, i) => setsData[`${ex.id}_${i}`]).filter(Boolean).length;
-  const allDone = doneSets === ex.sets;
-
+  const allDone  = doneSets === ex.sets;
   return (
     <div style={{
       display: "flex", alignItems: "center", gap: "14px",
       background: allDone ? "#e8f5e9" : "#fff",
       border: allDone ? "1.5px solid #81c784" : "1.5px solid #e0ddd8",
-      borderRadius: "14px", padding: "14px 16px",
-      marginBottom: "10px",
+      borderRadius: "14px", padding: "14px 16px", marginBottom: "10px",
       boxShadow: allDone ? "none" : "0 1px 4px rgba(0,0,0,0.06)",
       transition: "all 0.2s ease",
     }}>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{
-          fontFamily: "'DM Sans', sans-serif", fontSize: "15px", fontWeight: "600",
+          fontSize: "15px", fontWeight: "600",
           color: allDone ? "#558b5a" : "#2c2a27",
-          textDecoration: allDone ? "line-through" : "none",
-          lineHeight: 1.3,
-        }}>
-          {ex.name}
-        </div>
-        <div style={{
-          fontFamily: "'DM Sans', sans-serif", fontSize: "12px",
-          color: allDone ? "#81c784" : "#9e9890", marginTop: "2px",
-        }}>
+          textDecoration: allDone ? "line-through" : "none", lineHeight: 1.3,
+        }}>{ex.name}</div>
+        <div style={{ fontSize: "12px", color: allDone ? "#81c784" : "#9e9890", marginTop: "2px" }}>
           {ex.detail}{ex.note ? ` · ${ex.note}` : ""}
           {ex.sets > 1 ? ` · ${doneSets}/${ex.sets} sets` : ""}
         </div>
@@ -259,22 +269,47 @@ function ExerciseItem({ ex, setsData, onToggle }) {
 }
 
 function PTTracker() {
-  const [setsData, setSetsData] = useState(() => loadSets(todayKey()));
+  const [setsData,   setSetsData]   = useState(() => window.localLoad(todayKey()));
+  const [syncStatus, setSyncStatus] = useState('');
+  const unsubRef = useRef(null);
+
+  useEffect(() => {
+    setSyncStatus('Loading…');
+    window.fbLoad(todayKey()).then(data => {
+      const merged = { ...window.localLoad(todayKey()), ...data };
+      setSetsData(merged);
+      window.localSave(todayKey(), merged);
+      setSyncStatus('');
+    });
+
+    // live sync — reflect changes from other devices
+    unsubRef.current = window.fbListen(todayKey(), (data) => {
+      setSetsData(prev => ({ ...prev, ...data }));
+      window.localSave(todayKey(), data);
+    });
+
+    return () => { if (unsubRef.current) unsubRef.current(); };
+  }, []);
 
   const toggle = (key) => {
     const next = { ...setsData, [key]: !setsData[key] };
     setSetsData(next);
-    saveSets(todayKey(), next);
+    window.localSave(todayKey(), next);
+    setSyncStatus('Saving…');
+    window.fbSave(todayKey(), next).then(() => {
+      setSyncStatus('✓ Synced');
+      setTimeout(() => setSyncStatus(''), 2000);
+    }).catch(() => setSyncStatus('⚠ Offline'));
   };
 
-  const done = countDone(setsData);
-  const pct = Math.round((done / TOTAL_SETS) * 100);
+  const done   = Object.values(setsData).filter(Boolean).length;
+  const pct    = Math.round((done / TOTAL_SETS) * 100);
   const allDone = done >= TOTAL_SETS;
-  const today = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
+  const today  = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
   const dayNum = Math.floor((new Date() - SURGERY_DATE) / 86400000);
 
   return (
-    <div style={{ minHeight: "100vh", background: "#f5f2ee", fontFamily: "'DM Sans', sans-serif", paddingBottom: "40px" }}>
+    <div style={{ minHeight: "100vh", background: "#f5f2ee", paddingBottom: "40px" }}>
       {/* Header */}
       <div style={{ background: "#2c2a27", padding: "28px 24px 24px", color: "#fff" }}>
         <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: "26px", letterSpacing: "-0.3px", marginBottom: "2px" }}>
@@ -284,11 +319,7 @@ function PTTracker() {
         <div style={{ fontSize: "12px", color: "#9e9890", marginBottom: "16px" }}>
           Day {dayNum} post-op · BPTB ACL + partial meniscectomy
         </div>
-
-        {/* Weekly tracker */}
         <WeekBar />
-
-        {/* Progress bar */}
         <div style={{ marginTop: "20px" }}>
           <div style={{ fontSize: "12px", color: "#9e9890", marginBottom: "6px", fontWeight: "500", letterSpacing: "0.5px", textTransform: "uppercase" }}>
             {done}/{TOTAL_SETS} sets done
@@ -303,7 +334,7 @@ function PTTracker() {
         </div>
       </div>
 
-      {/* Exercise list */}
+      {/* Exercises */}
       <div style={{ padding: "20px 20px 0" }}>
         <div style={{ fontSize: "11px", fontWeight: "600", color: "#9e9890", letterSpacing: "0.8px", textTransform: "uppercase", marginBottom: "10px" }}>
           Standing
@@ -311,7 +342,6 @@ function PTTracker() {
         {EXERCISES.slice(0, 3).map(ex => (
           <ExerciseItem key={ex.id} ex={ex} setsData={setsData} onToggle={toggle} />
         ))}
-
         <div style={{ fontSize: "11px", fontWeight: "600", color: "#9e9890", letterSpacing: "0.8px", textTransform: "uppercase", margin: "16px 0 10px" }}>
           Floor
         </div>
@@ -329,6 +359,12 @@ function PTTracker() {
           All done for today 💪 Rest up.
         </div>
       )}
+
+      {syncStatus ? (
+        <div style={{ textAlign: "center", fontSize: "11px", color: "#9e9890", letterSpacing: "0.5px", padding: "12px 20px 0" }}>
+          {syncStatus}
+        </div>
+      ) : null}
     </div>
   );
 }
