@@ -144,6 +144,17 @@
   window.localSave = function(dateKey, data) {
     localStorage.setItem(`pt_sets_${dateKey}`, JSON.stringify(data));
   };
+
+  // ── Zwift (Firebase-backed) ──
+  function fbZwiftPath(dateKey) { return `pt-tracker/ashley/${dateKey}/zwift`; }
+  window.fbLoadZwift = function(dateKey) {
+    return db.ref(fbZwiftPath(dateKey)).get()
+      .then(snap => snap.exists() ? snap.val() : false)
+      .catch(() => false);
+  };
+  window.fbSaveZwift = function(dateKey, val) {
+    return db.ref(fbZwiftPath(dateKey)).set(val).catch(() => {});
+  };
 </script>
 
 <script type="text/babel">
@@ -190,8 +201,8 @@ function clearOldWeekData() {
   const lastReset = localStorage.getItem("pt_week_reset");
   if (lastReset !== weekStart) {
     Object.keys(localStorage).forEach(k => {
-      if (k.startsWith("pt_sets_")) {
-        const dateStr = k.replace("pt_sets_", "");
+      if (k.startsWith("pt_sets_") || k.startsWith("pt_zwift_")) {
+        const dateStr = k.replace(/^pt_(sets|zwift)_/, "");
         if (dateStr < weekStart) localStorage.removeItem(k);
       }
     });
@@ -200,17 +211,21 @@ function clearOldWeekData() {
 }
 
 const EXERCISES = [
-  { id: "e1", name: "Calf Raises",           detail: "× 20",  sets: 2, note: "standing" },
-  { id: "e2", name: "Hip Flexor",             detail: "× 20",  sets: 2, note: "standing · 3 lb ankle weight" },
-  { id: "e3", name: "Heel Slides",            detail: "× 15",  sets: 2, note: "standing" },
-  { id: "e9", name: "Single Leg Balance",     detail: "× 30s", sets: 3 },
-  { id: "e4", name: "Hip Abductions",         detail: "× 20",  sets: 2 },
-  { id: "e5", name: "Quad Sets",              detail: "× 10",  sets: 4, note: "10 sec hold each" },
-  { id: "e6", name: "Leg Raises",             detail: "× 10",  sets: 3 },
-  { id: "e7", name: "Prone Quad Activations", detail: "× 30",  sets: 1, note: "3 sec hold · 1 lb ankle weight" },
-  { id: "e8", name: "Heel Slides with Strap", detail: "× 10",  sets: 4, note: "supine" },
-  { id: "e10", name: "Reverse Plank",         detail: "× 10",  sets: 1, note: "feet elevated · 10 sec hold each" },
+  // Standing
+  { id: "e1",  name: "Calf Raises",           detail: "× 20",   sets: 2, note: "standing" },
+  { id: "e2",  name: "Hip Flexor",             detail: "× 20",   sets: 2, note: "standing · 3 lb ankle weight" },
+  { id: "e3",  name: "Heel Slides",            detail: "× 15",   sets: 2, note: "standing" },
+  { id: "e9",  name: "Single Leg Balance",     detail: "× 30s",  sets: 3 },
+  // Floor
+  { id: "e11", name: "Heel Props",             detail: "10 min", sets: 2, note: "twice daily" },
+  { id: "e4",  name: "Hip Abductions",         detail: "× 20",   sets: 2 },
+  { id: "e5",  name: "Quad Sets",              detail: "× 10",   sets: 4, note: "10 sec hold each" },
+  { id: "e6",  name: "Leg Raises",             detail: "× 10",   sets: 4 },
+  { id: "e7",  name: "Prone Quad Activations", detail: "× 30",   sets: 1, note: "3 sec hold · 1 lb ankle weight" },
+  { id: "e8",  name: "Heel Slides with Strap", detail: "× 10",   sets: 4, note: "supine" },
+  { id: "e10", name: "Reverse Plank",          detail: "× 10",   sets: 1, note: "feet elevated · 10 sec hold each" },
 ];
+const STANDING_COUNT = 4;
 
 const TOTAL_SETS   = EXERCISES.reduce((sum, ex) => sum + ex.sets, 0);
 const SURGERY_DATE = new Date("2026-03-19");
@@ -231,24 +246,28 @@ function getWeekDays() {
   });
 }
 
-function getDayStatus(dateKey, weekData = {}) {
+function getDayStatus(dateKey, weekData = {}, zwiftData = {}) {
   const data = weekData[dateKey] || window.localLoad(dateKey);
   const done = Object.values(data).filter(Boolean).length;
   const isFuture = dateKey > todayKey();
+  const hasZwift = !!zwiftData[dateKey];
   if (isFuture) return "none";
-  if (done === 0) return "red";
+  if (done >= TOTAL_SETS && hasZwift) return "green-star";
   if (done >= TOTAL_SETS) return "green";
+  if (done === 0 && !hasZwift) return "red";
   return "orange";
 }
 
-const STATUS_COLORS = { red: "#e53935", orange: "#fb8c00", green: "#43a047", none: "#454340" };
+const STATUS_COLORS = { red: "#e53935", orange: "#fb8c00", green: "#43a047", "green-star": "#43a047", none: "#454340" };
 
-function WeekBar({ weekData }) {
+function WeekBar({ weekData, zwiftData }) {
   const days = getWeekDays();
   return (
     <div style={{ display: "flex", justifyContent: "space-between", padding: "0 4px", marginTop: "16px" }}>
       {days.map(({ label, key, isToday }) => {
-        const color = STATUS_COLORS[getDayStatus(key, weekData)];
+        const status = getDayStatus(key, weekData, zwiftData);
+        const color = STATUS_COLORS[status];
+        const isStar = status === "green-star";
         return (
           <div key={key} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "5px" }}>
             <div style={{
@@ -256,8 +275,10 @@ function WeekBar({ weekData }) {
               background: color,
               border: isToday ? "2.5px solid #fff" : "none",
               boxShadow: isToday ? "0 0 0 2px " + color : "none",
-              opacity: getDayStatus(key, weekData) === "none" ? 0.3 : 1,
-            }} />
+              opacity: status === "none" ? 0.3 : 1,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontSize: "14px",
+            }}>{isStar ? "⭐" : ""}</div>
             <div style={{
               fontSize: "11px", fontWeight: isToday ? "700" : "400",
               color: isToday ? "#fff" : "#9e9890",
@@ -265,6 +286,37 @@ function WeekBar({ weekData }) {
           </div>
         );
       })}
+    </div>
+  );
+}
+
+function ZwiftItem({ done, onToggle }) {
+  return (
+    <div style={{
+      display: "flex", alignItems: "center", gap: "14px",
+      background: done ? "#fffde7" : "#fff",
+      border: done ? "1.5px solid #f9a825" : "1.5px dashed #c5bfb8",
+      borderRadius: "14px", padding: "14px 16px", marginBottom: "10px",
+      cursor: "pointer", transition: "all 0.2s ease",
+    }} onClick={onToggle}>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <span style={{ fontSize: "15px", fontWeight: "600", color: done ? "#f57f17" : "#2c2a27", textDecoration: done ? "line-through" : "none" }}>
+            🚴 Zwift
+          </span>
+          <span style={{ fontSize: "10px", fontWeight: "700", letterSpacing: "0.5px", background: "#f9a825", color: "#fff", borderRadius: "6px", padding: "2px 6px", textTransform: "uppercase" }}>Optional</span>
+        </div>
+        <div style={{ fontSize: "12px", color: done ? "#f9a825" : "#9e9890", marginTop: "2px" }}>
+          {done ? "Ride logged ⭐ — day bubble gets a star!" : "Tap to log your ride · earns a ⭐ on today"}
+        </div>
+      </div>
+      <div style={{
+        width: "32px", height: "32px", borderRadius: "50%", flexShrink: 0,
+        border: done ? "none" : "2px solid #c5bfb8",
+        background: done ? "#f9a825" : "transparent",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        fontSize: "16px", transition: "all 0.2s ease",
+      }}>{done ? "⭐" : ""}</div>
     </div>
   );
 }
@@ -330,6 +382,8 @@ function PTTracker() {
   const [setsData,   setSetsData]   = useState(() => window.localLoad(todayKey()));
   const [syncStatus, setSyncStatus] = useState('');
   const [weekData,   setWeekData]   = useState(() => ({ [todayKey()]: window.localLoad(todayKey()) }));
+  const [zwiftDone,  setZwiftDone]  = useState(false);
+  const [zwiftData,  setZwiftData]  = useState({});
   const unsubRef    = useRef(null);
   const prevAllDone = useRef(false);
 
@@ -345,7 +399,13 @@ function PTTracker() {
       setSyncStatus('');
     });
 
-    // Load all other week days for the week bar
+    // Load today's Zwift from Firebase
+    window.fbLoadZwift(todayKey()).then(val => {
+      setZwiftDone(!!val);
+      setZwiftData(prev => ({ ...prev, [todayKey()]: !!val }));
+    });
+
+    // Load all other week days for the week bar (sets + zwift)
     getWeekDays().forEach(({ key }) => {
       if (key === todayKey()) return;
       window.fbLoad(key).then(data => {
@@ -353,6 +413,9 @@ function PTTracker() {
         const merged = { ...local, ...data };
         window.localSave(key, merged);
         setWeekData(prev => ({ ...prev, [key]: merged }));
+      });
+      window.fbLoadZwift(key).then(val => {
+        setZwiftData(prev => ({ ...prev, [key]: !!val }));
       });
     });
 
@@ -365,6 +428,14 @@ function PTTracker() {
 
     return () => { if (unsubRef.current) unsubRef.current(); };
   }, []);
+
+  const toggleZwift = () => {
+    const next = !zwiftDone;
+    setZwiftDone(next);
+    setZwiftData(prev => ({ ...prev, [todayKey()]: next }));
+    window.fbSaveZwift(todayKey(), next);
+    if (next) launchConfetti();
+  };
 
   const toggle = (key) => {
     const next = { ...setsData, [key]: !setsData[key] };
@@ -400,7 +471,7 @@ function PTTracker() {
         <div style={{ fontSize: "12px", color: "#9e9890", marginBottom: "16px" }}>
           Day {dayNum} post-op · BPTB ACL + partial meniscectomy
         </div>
-        <WeekBar weekData={weekData} />
+        <WeekBar weekData={weekData} zwiftData={zwiftData} />
         <div style={{ marginTop: "20px" }}>
           <div style={{ fontSize: "12px", color: "#9e9890", marginBottom: "6px", fontWeight: "500", letterSpacing: "0.5px", textTransform: "uppercase" }}>
             {done}/{TOTAL_SETS} sets done
@@ -420,15 +491,19 @@ function PTTracker() {
         <div style={{ fontSize: "11px", fontWeight: "600", color: "#9e9890", letterSpacing: "0.8px", textTransform: "uppercase", marginBottom: "10px" }}>
           Standing
         </div>
-        {EXERCISES.slice(0, 4).map(ex => (
+        {EXERCISES.slice(0, STANDING_COUNT).map(ex => (
           <ExerciseItem key={ex.id} ex={ex} setsData={setsData} onToggle={toggle} />
         ))}
         <div style={{ fontSize: "11px", fontWeight: "600", color: "#9e9890", letterSpacing: "0.8px", textTransform: "uppercase", margin: "16px 0 10px" }}>
           Floor
         </div>
-        {EXERCISES.slice(3).map(ex => (
+        {EXERCISES.slice(STANDING_COUNT).map(ex => (
           <ExerciseItem key={ex.id} ex={ex} setsData={setsData} onToggle={toggle} />
         ))}
+        <div style={{ fontSize: "11px", fontWeight: "600", color: "#9e9890", letterSpacing: "0.8px", textTransform: "uppercase", margin: "16px 0 10px" }}>
+          Bonus
+        </div>
+        <ZwiftItem done={zwiftDone} onToggle={toggleZwift} />
       </div>
 
       {allDone && (
