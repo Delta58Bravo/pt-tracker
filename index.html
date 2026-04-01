@@ -201,13 +201,15 @@ function clearOldWeekData() {
 
 const EXERCISES = [
   { id: "e1", name: "Calf Raises",           detail: "× 20",  sets: 2, note: "standing" },
-  { id: "e2", name: "Hip Flexor",             detail: "× 20",  sets: 2, note: "standing" },
+  { id: "e2", name: "Hip Flexor",             detail: "× 20",  sets: 2, note: "standing · 3 lb ankle weight" },
   { id: "e3", name: "Heel Slides",            detail: "× 15",  sets: 2, note: "standing" },
+  { id: "e9", name: "Single Leg Balance",     detail: "× 30s", sets: 3 },
   { id: "e4", name: "Hip Abductions",         detail: "× 20",  sets: 2 },
   { id: "e5", name: "Quad Sets",              detail: "× 10",  sets: 4, note: "10 sec hold each" },
   { id: "e6", name: "Leg Raises",             detail: "× 10",  sets: 3 },
-  { id: "e7", name: "Prone Quad Activations", detail: "× 30",  sets: 1, note: "3 sec hold each" },
+  { id: "e7", name: "Prone Quad Activations", detail: "× 30",  sets: 1, note: "3 sec hold · 1 lb ankle weight" },
   { id: "e8", name: "Heel Slides with Strap", detail: "× 10",  sets: 4, note: "supine" },
+  { id: "e10", name: "Reverse Plank",         detail: "× 10",  sets: 1, note: "feet elevated · 10 sec hold each" },
 ];
 
 const TOTAL_SETS   = EXERCISES.reduce((sum, ex) => sum + ex.sets, 0);
@@ -232,12 +234,14 @@ function getWeekDays() {
 function getDayStatus(dateKey) {
   const data = window.localLoad(dateKey);
   const done = Object.values(data).filter(Boolean).length;
+  const isFuture = dateKey > todayKey();
+  if (isFuture) return "none";
   if (done === 0) return "red";
   if (done >= TOTAL_SETS) return "green";
   return "orange";
 }
 
-const STATUS_COLORS = { red: "#e53935", orange: "#fb8c00", green: "#43a047" };
+const STATUS_COLORS = { red: "#e53935", orange: "#fb8c00", green: "#43a047", none: "#454340" };
 
 function WeekBar() {
   const days = getWeekDays();
@@ -252,6 +256,7 @@ function WeekBar() {
               background: color,
               border: isToday ? "2.5px solid #fff" : "none",
               boxShadow: isToday ? "0 0 0 2px " + color : "none",
+              opacity: getDayStatus(key) === "none" ? 0.3 : 1,
             }} />
             <div style={{
               fontSize: "11px", fontWeight: isToday ? "700" : "400",
@@ -398,7 +403,7 @@ function PTTracker() {
         <div style={{ fontSize: "11px", fontWeight: "600", color: "#9e9890", letterSpacing: "0.8px", textTransform: "uppercase", marginBottom: "10px" }}>
           Standing
         </div>
-        {EXERCISES.slice(0, 3).map(ex => (
+        {EXERCISES.slice(0, 4).map(ex => (
           <ExerciseItem key={ex.id} ex={ex} setsData={setsData} onToggle={toggle} />
         ))}
         <div style={{ fontSize: "11px", fontWeight: "600", color: "#9e9890", letterSpacing: "0.8px", textTransform: "uppercase", margin: "16px 0 10px" }}>
